@@ -8,31 +8,6 @@
     body {
     }
     h1, h2, h3 {
-      color: #0078d7;
-    }
-    pre {
-      background: #222;
-      color: #f8f8f2;
-      padding: 15px;
-      overflow-x: auto;
-      border-radius: 5px;
-    }
-    code {
-      font-family: "Fira Code", monospace;
-      background: #eee;
-      padding: 2px 5px;
-      border-radius: 3px;
-    }
-    a {
-      color: #0078d7;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    ul {
-      margin-left: 20px;
-    }
   </style>
 </head>
 <body>
