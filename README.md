@@ -3,12 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
- 
-  <style>
-    body {
-    }
-    h1, h2, h3 {
-  </style>
 </head>
 <body>
   <h1>Gmail AI App</h1>
