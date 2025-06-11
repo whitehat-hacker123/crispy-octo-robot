@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { exec } from "child_process";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import autoReplyRouter from './auto-reply.js';
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_SECRET,
   process.env.REDIRECT_URI
 );
+
+// OAuth2 클라이언트를 app.locals에 저장
+app.locals.oauth2Client = oauth2Client;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -143,7 +147,7 @@ app.get("/send", (req, res) => {
         margin: 5px 0;
       }
       button {
-        background-color: #007bff;
+        background: linear-gradient(90deg, #1a2980 0%, #26d0ce 100%);
         color: white;
         border: none;
         border-radius: 4px;
@@ -151,33 +155,13 @@ app.get("/send", (req, res) => {
         cursor: pointer;
         transition: all 0.3s ease;
         position: relative;
+        box-shadow: 0 0 8px 0 #26d0ce80;
+        font-weight: bold;
+        letter-spacing: 1px;
       }
       button:hover {
-        background-color: #0056b3;
-      }
-      button:hover::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(
-          45deg,
-rgb(0, 47, 255),
-rgb(0, 31, 185),
-rgb(62, 2, 126),
-rgb(25, 1, 82),
-        );
-        background-size: 400%;
-        z-index: -1;
-        border-radius: 6px;
-        animation: glowing 20s linear infinite;
-      }
-      @keyframes glowing {
-        0% { background-position: 0 0; }
-        50% { background-position: 400% 0; }
-        100% { background-position: 0 0; }
+        background: linear-gradient(90deg, #26d0ce 0%, #1a2980 100%);
+        box-shadow: 0 0 16px 2px #26d0cecc;
       }
     </style>
     <h1>✉️ 메일 보내기</h1>
@@ -227,13 +211,13 @@ app.get("/ask-ai", (req, res) => {
         min-height: 100vh;
         background: linear-gradient(
           135deg,
-rgb(0, 65, 161) 0%,
-rgb(5, 54, 126) 20%,
-rgb(8, 0, 82) 40%,
+          #0a192f 0%,
+          #0a192f 20%,
+          #000000 40%,
           #000000 100%
         );
-        background-size: 300% 300%;
-        animation: gradientBG 10s ease infinite;
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
         color: #fff;
         font-family: Arial, sans-serif;
       }
@@ -251,7 +235,7 @@ rgb(8, 0, 82) 40%,
         margin: 5px 0;
       }
       button {
-        background-color: #007bff;
+        background: linear-gradient(90deg, #1a2980 0%, #26d0ce 100%);
         color: white;
         border: none;
         border-radius: 4px;
@@ -259,33 +243,13 @@ rgb(8, 0, 82) 40%,
         cursor: pointer;
         transition: all 0.3s ease;
         position: relative;
+        box-shadow: 0 0 8px 0 #26d0ce80;
+        font-weight: bold;
+        letter-spacing: 1px;
       }
       button:hover {
-        background-color: #0056b3;
-      }
-      button:hover::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(
-          45deg,
-rgb(0, 47, 255),
-rgb(0, 31, 185),
-rgb(62, 2, 126),
-rgb(25, 1, 82),
-        );
-        background-size: 400%;
-        z-index: -1;
-        border-radius: 6px;
-        animation: glowing 20s linear infinite;
-      }
-      @keyframes glowing {
-        0% { background-position: 0 0; }
-        50% { background-position: 400% 0; }
-        100% { background-position: 0 0; }
+        background: linear-gradient(90deg, #26d0ce 0%, #1a2980 100%);
+        box-shadow: 0 0 16px 2px #26d0cecc;
       }
       #chat-container {
         max-width: 800px;
@@ -334,12 +298,10 @@ rgb(25, 1, 82),
         const prompt = promptInput.value;
         
         // 사용자 메시지 추가
-        chatHistory.innerHTML += \`
-          <div class="message user-message">
-            <p style="color: #007bff; font-weight: bold;">나:</p>
-            <p style="color: #fff;">\${prompt}</p>
-          </div>
-        \`;
+        chatHistory.innerHTML += '<div class="message user-message">' +
+          '<p style="color: #007bff; font-weight: bold;">나:</p>' +
+          '<p style="color: #fff;">' + prompt + '</p>' +
+        '</div>';
         
         try {
           const response = await fetch('/ai-reply', {
@@ -347,7 +309,7 @@ rgb(25, 1, 82),
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: \`prompt=\${encodeURIComponent(prompt)}\`
+            body: 'prompt=' + encodeURIComponent(prompt)
           });
           
           const data = await response.text();
@@ -356,169 +318,259 @@ rgb(25, 1, 82),
           
           // AI 응답 추가
           const aiResponse = tempDiv.querySelector('.ai-response').innerHTML;
-          chatHistory.innerHTML += \`
-            <div class="message ai-message">
-              <p style="color:rgb(123, 153, 130); font-weight: bold;">AI:</p>
-              <div class="ai-response" style="color: #fff;">\${aiResponse}</div>
-            </div>
-          \`;
+          chatHistory.innerHTML += '<div class="message ai-message">' +
+            '<p style="color:rgb(123, 153, 130); font-weight: bold;">AI:</p>' +
+            '<div class="ai-response" style="color: #fff;">' + aiResponse + '</div>' +
+          '</div>';
           
           // 스크롤을 최신 메시지로 이동
           chatHistory.scrollTop = chatHistory.scrollHeight;
           promptInput.value = '';
         } catch (error) {
           console.error('Error:', error);
-          chatHistory.innerHTML += \`
-            <div style="color: #ff4444; margin-bottom: 15px;">
-              오류가 발생했습니다. 다시 시도해주세요.
-            </div>
-          \`;
+          chatHistory.innerHTML += '<div style="color: #ff4444; margin-bottom: 15px;">오류가 발생했습니다. 다시 시도해주세요.</div>';
         }
       });
     </script>
   `);
 });
 
-async function getMailInfo(gmail, maxResults = 10, pageToken = null) {
-  try {
-    const result = await gmail.users.messages.list({
-      userId: "me",
-      maxResults,
-      pageToken,
-      q: "in:all"
-    });
-
-    if (!result.data.messages || result.data.messages.length === 0) {
-      return { mailInfo: "읽을 메일이 없습니다.", nextPageToken: null };
-    }
-
-    let mailInfo = `최근 ${result.data.messages.length}개의 메일을 보여드립니다. 더 많은 메일을 보려면 "이전 메일 보여줘"라고 말씀해주세요.\n\n`;
-    
-    for (const message of result.data.messages) {
-      const messageData = await gmail.users.messages.get({
-        userId: "me",
-        id: message.id,
-        format: "full",
-      });
-
-      const headers = messageData.data.payload.headers;
-      const subject = headers.find((h) => h.name === "Subject")?.value || "(제목 없음)";
-      const from = headers.find((h) => h.name === "From")?.value || "(보낸 사람 없음)";
-      const date = headers.find((h) => h.name === "Date")?.value || "";
-      const to = headers.find((h) => h.name === "To")?.value || "";
-      const labels = messageData.data.labelIds || [];
-      
-      let body = "";
-      if (messageData.data.payload.parts) {
-        body = messageData.data.payload.parts[0].body.data;
-      } else if (messageData.data.payload.body.data) {
-        body = messageData.data.payload.body.data;
+// 자동 응답 설정 페이지
+app.get("/auto-reply", (req, res) => {
+  res.send(`
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        background: linear-gradient(
+          135deg,
+          #0a192f 0%,
+          #0a192f 20%,
+          #000000 40%,
+          #000000 100%
+        );
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        color: #fff;
+        font-family: Arial, sans-serif;
       }
-      
-      if (body) {
-        body = Buffer.from(body, 'base64').toString('utf-8');
+      @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
       }
-
-      mailInfo += `메일 ${result.data.messages.indexOf(message) + 1}:\n`;
-      mailInfo += `제목: ${subject}\n`;
-      mailInfo += `보낸 사람: ${from}\n`;
-      mailInfo += `받는 사람: ${to}\n`;
-      mailInfo += `날짜: ${date}\n`;
-      mailInfo += `라벨: ${labels.join(', ')}\n`;
-      mailInfo += `내용: ${body ? body.substring(0, 200) + '...' : '(내용 없음)'}\n\n`;
-    }
-
-    return {
-      mailInfo,
-      nextPageToken: result.data.nextPageToken
-    };
-  } catch (error) {
-    console.error('메일 정보 가져오기 실패:', error);
-    throw error;
-  }
-}
-
-// AI 응답 처리
-app.post("/ai-reply", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-
-    if (!oauth2Client.credentials || !oauth2Client.credentials.access_token) {
-      res.send(`
-        <div class="ai-response" style="background-color: #333; color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p>⚠️ 먼저 <a href="/" style="color: #007bff;">여기</a>를 클릭해서 구글 인증을 완료해 주세요.</p>
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+      }
+      .mode-selector {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .mode-card {
+        flex: 1;
+        background: rgba(42, 42, 42, 0.8);
+        padding: 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .mode-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      }
+      .mode-card.selected {
+        border: 2px solid #26d0ce;
+      }
+      .settings {
+        background: rgba(42, 42, 42, 0.8);
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+      input[type="text"], textarea {
+        width: 100%;
+        background: rgba(26, 26, 26, 0.8);
+        border: 1px solid #444;
+        color: #fff;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 4px;
+      }
+      button {
+        background: linear-gradient(90deg, #1a2980 0%, #26d0ce 100%);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: linear-gradient(90deg, #26d0ce 0%, #1a2980 100%);
+      }
+    </style>
+    <div class="container">
+      <h1 style="text-align: center;">자동 응답 설정</h1>
+      
+      <div class="mode-selector">
+        <div class="mode-card" onclick="selectMode('auto')">
+          <h3>자동 모드</h3>
+          <p>GPT가 자동으로 메일을 분석하고 응답합니다.</p>
         </div>
-      `);
-      return;
-    }
+        <div class="mode-card" onclick="selectMode('confirm')">
+          <h3>확인 모드</h3>
+          <p>GPT가 응답을 생성하고 사용자 확인 후 전송합니다.</p>
+        </div>
+      </div>
 
-    const topicCheckResponse = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: `다음 질문이 이메일이나 메일과 관련된 질문인지 판단해주세요. 
-      이메일/메일 관련 질문이면 'true'를, 그렇지 않으면 'false'를 출력하세요.
-      질문: ${prompt}`,
-    });
+      <div class="settings">
+        <h3>응답 설정</h3>
+        <div>
+          <label>응답 스타일:</label>
+          <input type="text" id="responseStyle" placeholder="예: 공식적, 친근한, 전문적인">
+        </div>
+        <div>
+          <label>주요 키워드:</label>
+          <input type="text" id="keywords" placeholder="예: 회의, 프로젝트, 긴급">
+        </div>
+        <div>
+          <label>제외할 키워드:</label>
+          <input type="text" id="excludeKeywords" placeholder="예: 스팸, 광고">
+        </div>
+        <button onclick="saveSettings()">설정 저장</button>
+      </div>
+    </div>
 
-    const isEmailRelated = topicCheckResponse.output_text.trim().toLowerCase() === 'true';
-
-    let mailInfo = "";
-    if (isEmailRelated) {
-      const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-      const { mailInfo: fetchedMailInfo, nextPageToken } = await getMailInfo(gmail);
-      mailInfo = fetchedMailInfo;
+    <script>
+      let selectedMode = 'confirm';
       
-      if (prompt.toLowerCase().includes('이전') || prompt.toLowerCase().includes('더 많은')) {
-        if (nextPageToken) {
-          const { mailInfo: additionalMailInfo } = await getMailInfo(gmail, 10, nextPageToken);
-          mailInfo += "\n다음 10개의 메일입니다:\n\n" + additionalMailInfo;
+      function selectMode(mode) {
+        selectedMode = mode;
+        document.querySelectorAll('.mode-card').forEach(card => {
+          card.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+      }
+
+      async function saveSettings() {
+        const settings = {
+          mode: selectedMode,
+          responseStyle: document.getElementById('responseStyle').value,
+          keywords: document.getElementById('keywords').value,
+          excludeKeywords: document.getElementById('excludeKeywords').value
+        };
+
+        try {
+          const response = await fetch('/save-auto-reply-settings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings)
+          });
+
+          if (response.ok) {
+            alert('설정이 저장되었습니다!');
+          } else {
+            alert('설정 저장 중 오류가 발생했습니다.');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('설정 저장 중 오류가 발생했습니다.');
         }
       }
-    }
+    </script>
+  `);
+});
 
-    // AI에게 전달할 프롬프트 구성
-    const systemPrompt = `너는 이메일 에이전트야.
+// 자동 응답 설정 저장
+app.post("/save-auto-reply-settings", express.json(), (req, res) => {
+  const settings = req.body;
+  // TODO: 설정을 데이터베이스나 파일에 저장
+  res.json({ success: true });
+});
 
-사용자의 요청이 이메일 관련이면 처리하고, 아니면 "이메일 관련 질문만 도와드릴 수 있어요"라고 답해.
-
-이메일 관련 요청은 4가지다:
-
-1. 요약  
-2. 번역  
-3. 삭제  
-4. 검색
-
-단어가 정확하지 않아도 유추해. "그 메일 번역해줘", "3번째 이후 보여줘" 같은 말도 처리해.
-
-현재 메일 정보:
-${mailInfo}
-
-이제부터 사용자 요청을 이해하고, 행동해.
-
-만약 사용자가 "이전 메일 보여줘" 또는 "더 많은 메일 보여줘"라고 요청하면, 
-Gmail API를 사용하여 다음 10개의 메일을 추가로 가져와서 보여줘.`;
-
-    // AI 응답 생성
-    const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: `${systemPrompt}\n\n사용자 질문: ${prompt}`,
+// 자동 응답 처리
+app.post("/process-auto-reply", express.json(), async (req, res) => {
+  const { messageId, mode } = req.body;
+  
+  try {
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    const message = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "full",
     });
 
-    const reply = response.output_text;
+    const headers = message.data.payload.headers;
+    const subject = headers.find((h) => h.name === "Subject")?.value || "";
+    const from = headers.find((h) => h.name === "From")?.value || "";
+    
+    let body = "";
+    if (message.data.payload.parts) {
+      body = message.data.payload.parts[0].body.data;
+    } else if (message.data.payload.body.data) {
+      body = message.data.payload.body.data;
+    }
+    
+    if (body) {
+      body = Buffer.from(body, 'base64').toString('utf-8');
+    }
 
-    res.send(`
-      <div class="ai-response" style="background-color: #333; color: #fff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <p style="white-space: pre-wrap;">${reply}</p>
-      </div>
-    `);
-  } catch (err) {
-    console.error("AI 응답 실패:", err);
-    res.status(500).send(`
-      <div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000; border-radius: 8px;">
-        ❌ 오류 발생: ${err.message}
-      </div>
-    `);
+    // GPT를 사용하여 응답 생성
+    const response = await openai.responses.create({
+      model: "gpt-4o-mini",
+      input: `다음 메일에 대한 적절한 응답을 작성해주세요:
+        제목: ${subject}
+        보낸 사람: ${from}
+        내용: ${body}
+        
+        응답은 공식적이고 전문적인 톤으로 작성해주세요.`,
+    });
+
+    const replyContent = response.output_text;
+
+    if (mode === 'auto') {
+      // 자동 모드: 바로 응답 전송
+      const encodedMessage = Buffer.from(
+        `To: ${from}\r\n` +
+        `Subject: Re: ${subject}\r\n\r\n` +
+        `${replyContent}`
+      ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+      await gmail.users.messages.send({
+        userId: "me",
+        requestBody: {
+          raw: encodedMessage,
+        },
+      });
+
+      res.json({ success: true, message: "자동 응답이 전송되었습니다." });
+    } else {
+      // 확인 모드: 응답 내용 반환
+      res.json({
+        success: true,
+        replyContent,
+        originalMessage: {
+          subject,
+          from,
+          body
+        }
+      });
+    }
+  } catch (error) {
+    console.error("자동 응답 처리 실패:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// 자동 응답 라우터 추가
+app.use('/auto-reply', autoReplyRouter);
 
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);
@@ -528,18 +580,20 @@ app.listen(port, () => {
 // 에러 처리 미들웨어
 app.use((err, req, res, next) => {
   console.error('❌ 서버 에러:', err);
-  res.status(500).send(`
-    <div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000; border-radius: 8px;">
-      ❌ 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
-    </div>
-  `);
+  res.status(500).send(
+    '<div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000; border-radius: 8px;">' +
+      '❌ 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' +
+    '</div>'
+  );
+  next();
 });
 
 // 404 처리
-app.use((req, res) => {
-  res.status(404).send(`
-    <div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000; border-radius: 8px;">
-      ❌ 요청하신 페이지를 찾을 수 없습니다.
-    </div>
-  `);
+app.use((req, res, next) => {
+  res.status(404).send(
+    '<div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000; border-radius: 8px;">' +
+      '❌ 요청하신 페이지를 찾을 수 없습니다.' +
+    '</div>'
+  );
+  next();
 });
