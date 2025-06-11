@@ -7,6 +7,8 @@ import { exec } from "child_process";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import autoReplyRouter from './auto-reply.js';
+import keywordExtractorRouter from './keyword-extractor.js';
+import mailStatsRouter from './mail-stats.js';
 
 dotenv.config();
 
@@ -571,6 +573,12 @@ app.post("/process-auto-reply", express.json(), async (req, res) => {
 
 // 자동 응답 라우터 추가
 app.use('/auto-reply', autoReplyRouter);
+
+// 키워드 추출 라우터 추가
+app.use('/keyword-extractor', keywordExtractorRouter);
+
+// 메일 통계 라우터 추가
+app.use('/mail-stats', mailStatsRouter);
 
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);
