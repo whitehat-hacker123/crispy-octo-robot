@@ -92,13 +92,6 @@ app.get("/", (req, res) => {
                     overflow: hidden;
                 }
 
-                #canvas {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    z-index: 1;
-                }
-
                 .welcome {
                     position: fixed;
                     top: 50%;
@@ -110,6 +103,7 @@ app.get("/", (req, res) => {
                     padding: 2rem;
                     border-radius: 1rem;
                     backdrop-filter: blur(10px);
+                    transition: all 0.3s ease;
                 }
 
                 .welcome h1 {
@@ -134,6 +128,12 @@ app.get("/", (req, res) => {
                     border-radius: 1rem;
                     backdrop-filter: blur(10px);
                     z-index: 2;
+                    transition: all 0.3s ease;
+                }
+
+                .menu:hover {
+                    transform: translateY(-50%) scale(1.1);
+                    background: rgba(0, 0, 0, 0.9);
                 }
 
                 .menu h2 {
@@ -146,11 +146,18 @@ app.get("/", (req, res) => {
                     color: #fff;
                     text-decoration: none;
                     padding: 0.5rem 0;
-                    transition: color 0.3s;
+                    transition: all 0.3s ease;
+                    opacity: 0.7;
+                }
+
+                .menu:hover a {
+                    opacity: 0.5;
                 }
 
                 .menu a:hover {
                     color: #26d0ce;
+                    opacity: 1;
+                    transform: translateX(10px);
                 }
 
                 .stats {
@@ -163,6 +170,12 @@ app.get("/", (req, res) => {
                     border-radius: 1rem;
                     backdrop-filter: blur(10px);
                     z-index: 2;
+                    transition: all 0.3s ease;
+                }
+
+                .stats:hover {
+                    transform: translateY(-50%) scale(1.1);
+                    background: rgba(0, 0, 0, 0.9);
                 }
 
                 .stats h3 {
@@ -173,20 +186,21 @@ app.get("/", (req, res) => {
                 .stats p {
                     margin: 0.5rem 0;
                     color: #fff;
+                    transition: all 0.3s ease;
+                    opacity: 0.7;
                 }
 
-                .particle {
-                    position: absolute;
-                    background: #26d0ce;
-                    border-radius: 50%;
-                    pointer-events: none;
-                    opacity: 0.6;
+                .stats:hover p {
+                    opacity: 0.5;
+                }
+
+                .stats p:hover {
+                    opacity: 1;
+                    transform: translateX(-10px);
                 }
             </style>
         </head>
         <body>
-            <div id="canvas"></div>
-            
             <div class="welcome">
                 <h1>🤖 메일 에이전트</h1>
                 <p>AI 기반 스마트 메일 관리 시스템</p>
@@ -213,62 +227,6 @@ app.get("/", (req, res) => {
             </div>
 
             <script>
-                // 2D 파티클 시스템
-                class Particle {
-                    constructor(x, y) {
-                        this.x = x;
-                        this.y = y;
-                        this.size = Math.random() * 3 + 1;
-                        this.speedX = Math.random() * 2 - 1;
-                        this.speedY = Math.random() * 2 - 1;
-                        this.element = document.createElement('div');
-                        this.element.className = 'particle';
-                        this.element.style.width = this.size + 'px';
-                        this.element.style.height = this.size + 'px';
-                        this.element.style.left = this.x + 'px';
-                        this.element.style.top = this.y + 'px';
-                        document.getElementById('canvas').appendChild(this.element);
-                    }
-
-                    update() {
-                        this.x += this.speedX;
-                        this.y += this.speedY;
-
-                        if (this.x < 0 || this.x > window.innerWidth) this.speedX *= -1;
-                        if (this.y < 0 || this.y > window.innerHeight) this.speedY *= -1;
-
-                        this.element.style.left = this.x + 'px';
-                        this.element.style.top = this.y + 'px';
-                    }
-                }
-
-                // 파티클 생성
-                const particles = [];
-                const particleCount = 50;
-
-                for (let i = 0; i < particleCount; i++) {
-                    particles.push(new Particle(
-                        Math.random() * window.innerWidth,
-                        Math.random() * window.innerHeight
-                    ));
-                }
-
-                // 애니메이션
-                function animate() {
-                    particles.forEach(particle => particle.update());
-                    requestAnimationFrame(animate);
-                }
-
-                animate();
-
-                // 창 크기 조절 대응
-                window.addEventListener('resize', () => {
-                    particles.forEach(particle => {
-                        if (particle.x > window.innerWidth) particle.x = window.innerWidth;
-                        if (particle.y > window.innerHeight) particle.y = window.innerHeight;
-                    });
-                });
-
                 // 통계 업데이트
                 async function updateStats() {
                     try {
