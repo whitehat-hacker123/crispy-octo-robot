@@ -90,6 +90,53 @@ app.get("/", (req, res) => {
                     background: #1a1a1a;
                     color: #fff;
                     overflow: hidden;
+                    position: relative;
+                }
+
+                body::before {
+                    content: '';
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(
+                        45deg,
+                        #1a1a1a,
+                        #26d0ce,
+                        #1a1a1a,
+                        #26d0ce
+                    );
+                    background-size: 400% 400%;
+                    animation: gradientBG 15s ease infinite;
+                    opacity: 0.1;
+                    z-index: 0;
+                }
+
+                @keyframes gradientBG {
+                    0% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                    100% {
+                        background-position: 0% 50%;
+                    }
+                }
+
+                .gradient-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: radial-gradient(
+                        circle at center,
+                        transparent 0%,
+                        rgba(26, 26, 26, 0.8) 100%
+                    );
+                    z-index: 1;
                 }
 
                 .welcome {
@@ -106,15 +153,32 @@ app.get("/", (req, res) => {
                     transition: all 0.3s ease;
                 }
 
+                .welcome:hover {
+                    transform: translate(-50%, -50%) scale(1.2);
+                    background: rgba(0, 0, 0, 0.9);
+                }
+
                 .welcome h1 {
                     font-size: 3rem;
                     margin: 0;
                     color: #26d0ce;
+                    transition: all 0.3s ease;
                 }
 
                 .welcome p {
                     font-size: 1.2rem;
                     margin: 1rem 0;
+                    color: #fff;
+                    transition: all 0.3s ease;
+                    opacity: 0.5;
+                }
+
+                .welcome:hover p {
+                    opacity: 0.3;
+                }
+
+                .welcome:hover h1 {
+                    transform: scale(1.1);
                     color: #fff;
                 }
 
@@ -132,7 +196,7 @@ app.get("/", (req, res) => {
                 }
 
                 .menu:hover {
-                    transform: translateY(-50%) scale(1.1);
+                    transform: translateY(-50%) scale(1.3);
                     background: rgba(0, 0, 0, 0.9);
                 }
 
@@ -147,17 +211,17 @@ app.get("/", (req, res) => {
                     text-decoration: none;
                     padding: 0.5rem 0;
                     transition: all 0.3s ease;
-                    opacity: 0.7;
+                    opacity: 0.5;
                 }
 
                 .menu:hover a {
-                    opacity: 0.5;
+                    opacity: 0.3;
                 }
 
                 .menu a:hover {
                     color: #26d0ce;
                     opacity: 1;
-                    transform: translateX(10px);
+                    transform: translateX(20px);
                 }
 
                 .stats {
@@ -174,7 +238,7 @@ app.get("/", (req, res) => {
                 }
 
                 .stats:hover {
-                    transform: translateY(-50%) scale(1.1);
+                    transform: translateY(-50%) scale(1.3);
                     background: rgba(0, 0, 0, 0.9);
                 }
 
@@ -187,20 +251,148 @@ app.get("/", (req, res) => {
                     margin: 0.5rem 0;
                     color: #fff;
                     transition: all 0.3s ease;
-                    opacity: 0.7;
+                    opacity: 0.5;
                 }
 
                 .stats:hover p {
-                    opacity: 0.5;
+                    opacity: 0.3;
                 }
 
                 .stats p:hover {
                     opacity: 1;
-                    transform: translateX(-10px);
+                    transform: translateX(-20px);
                 }
+
+                /* 플랜 카드 스타일 */
+                .plans-container {
+                    position: fixed;
+                    bottom: 2rem;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    display: flex;
+                    gap: 2rem;
+                    z-index: 2;
+                }
+
+                .plan-card {
+                    width: 280px;
+                    background: rgba(0, 0, 0, 0.7);
+                    border-radius: 1.5rem;
+                    padding: 2rem;
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                }
+
+                .plan-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(45deg, transparent, rgba(38, 208, 206, 0.1));
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+
+                .plan-card:hover::before {
+                    opacity: 1;
+                }
+
+                .plan-card.basic::before {
+                    background: linear-gradient(45deg, transparent, rgba(38, 208, 206, 0.1));
+                }
+
+                .plan-card.pro::before {
+                    background: linear-gradient(45deg, transparent, rgba(38, 208, 206, 0.2));
+                }
+
+                .plan-card.enterprise::before {
+                    background: linear-gradient(45deg, transparent, rgba(38, 208, 206, 0.3));
+                }
+
+                .plan-card:hover {
+                    transform: translateY(-10px);
+                    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+                }
+
+                .plan-header {
+                    text-align: center;
+                    margin-bottom: 1.5rem;
+                }
+
+                .plan-name {
+                    font-size: 1.5rem;
+                    color: #26d0ce;
+                    margin: 0;
+                }
+
+                .plan-price {
+                    font-size: 2rem;
+                    color: #fff;
+                    margin: 0.5rem 0;
+                }
+
+                .plan-features {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .plan-features li {
+                    color: #fff;
+                    margin: 0.8rem 0;
+                    opacity: 0.7;
+                    transition: all 0.3s ease;
+                }
+
+                .plan-card:hover .plan-features li {
+                    opacity: 0.5;
+                }
+
+                .plan-features li:hover {
+                    opacity: 1;
+                    transform: translateX(10px);
+                }
+
+                .plan-button {
+                    display: block;
+                    width: 100%;
+                    padding: 0.8rem;
+                    margin-top: 1.5rem;
+                    background: transparent;
+                    border: 2px solid #26d0ce;
+                    color: #26d0ce;
+                    border-radius: 0.5rem;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-align: center;
+                    text-decoration: none;
+                }
+
+                .plan-button:hover {
+                    background: #26d0ce;
+                    color: #000;
+                }
+
+                /* 마우스 트래커 */
+                .mouse-tracker {
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    top: 0;
+                    left: 0;
+                    z-index: 1;
+                }
+
             </style>
         </head>
         <body>
+            <div class="gradient-overlay"></div>
+            <div class="mouse-tracker"></div>
+            
             <div class="welcome">
                 <h1>🤖 메일 에이전트</h1>
                 <p>AI 기반 스마트 메일 관리 시스템</p>
@@ -226,7 +418,69 @@ app.get("/", (req, res) => {
                 </div>
             </div>
 
+            <div class="plans-container">
+                <div class="plan-card basic">
+                    <div class="plan-header">
+                        <h3 class="plan-name">Basic</h3>
+                        <div class="plan-price">미정</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li>📧 기본 메일 관리</li>
+                        <li>🤖 기본 자동 응답</li>
+                        <li>🔑 키워드 추출</li>
+                        <li>📊 기본 통계</li>
+                    </ul>
+                    <a href="#" class="plan-button">시작하기</a>
+                </div>
+
+                <div class="plan-card pro">
+                    <div class="plan-header">
+                        <h3 class="plan-name">Pro</h3>
+                        <div class="plan-price">미정</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li>📧 고급 메일 관리</li>
+                        <li>🤖 AI 자동 응답</li>
+                        <li>🔑 고급 키워드 분석</li>
+                        <li>📊 상세 통계</li>
+                        <li>🔍 의도 분석</li>
+                    </ul>
+                    <a href="#" class="plan-button">시작하기</a>
+                </div>
+
+                <div class="plan-card enterprise">
+                    <div class="plan-header">
+                        <h3 class="plan-name">Enterprise</h3>
+                        <div class="plan-price">미정</div>
+                    </div>
+                    <ul class="plan-features">
+                        <li>📧 엔터프라이즈 메일 관리</li>
+                        <li>🤖 커스텀 AI 응답</li>
+                        <li>🔑 실시간 키워드 분석</li>
+                        <li>📊 실시간 통계</li>
+                        <li>🔍 고급 의도 분석</li>
+                        <li>🔢 우선순위 관리</li>
+                    </ul>
+                    <a href="#" class="plan-button">문의하기</a>
+                </div>
+            </div>
+
             <script>
+                // 마우스 트래킹 효과
+                const tracker = document.querySelector('.mouse-tracker');
+                const cards = document.querySelectorAll('.plan-card');
+
+                tracker.addEventListener('mousemove', (e) => {
+                    cards.forEach(card => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        
+                        card.style.setProperty('--mouse-x', `${x}px`);
+                        card.style.setProperty('--mouse-y', `${y}px`);
+                    });
+                });
+
                 // 통계 업데이트
                 async function updateStats() {
                     try {
