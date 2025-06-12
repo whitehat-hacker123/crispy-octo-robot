@@ -2,6 +2,7 @@ import express from 'express';
 import { google } from 'googleapis';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -226,28 +227,14 @@ router.post('/process', express.json(), async (req, res) => {
     }
 
     // GPT를 사용하여 응답 생성
-    const response = await openai.responses.create({
-      model: "gpt-4o-mini",
-      input: `다음 메일에 대한 적절한 응답을 작성해주세요:
-        제목: ${subject}
-        보낸 사람: ${from}
-        내용: ${body}
-        
-        응답 스타일: ${autoReplySettings.responseStyle}
-        주요 키워드: ${autoReplySettings.keywords}
-        제외할 키워드: ${autoReplySettings.excludeKeywords}
-        
-        응답은 공식적이고 전문적인 톤으로 작성해주세요.`,
-    });
-
-    const replyContent = response.output_text;
+    const response = await generateAndLogResponse(subject, from, body);
 
     if (mode === 'auto') {
       // 자동 모드: 바로 응답 전송
       const encodedMessage = Buffer.from(
         `To: ${from}\r\n` +
         `Subject: Re: ${subject}\r\n\r\n` +
-        `${replyContent}`
+        `${response}`
       ).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
       await gmail.users.messages.send({
@@ -262,7 +249,7 @@ router.post('/process', express.json(), async (req, res) => {
       // 확인 모드: 응답 내용 반환
       res.json({
         success: true,
-        replyContent,
+        replyContent: response,
         originalMessage: {
           subject,
           from,
@@ -275,5 +262,93 @@ router.post('/process', express.json(), async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// 키워드 추출 함수
+function extractKeywords(text) {
+    // HTML 태그 제거
+    text = text.replace(/<[^>]*>/g, '');
+    
+    // 특수문자 제거 및 소문자 변환
+    text = text.toLowerCase().replace(/[^\w\s가-힣]/g, ' ');
+    
+    // 불용어 목록
+    const stopWords = new Set([
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'about',
+        '이', '그', '저', '것', '수', '등', '및', '또는', '그리고', '하지만', '그래서', '때문에',
+        '위해', '대해', '관련', '대한', '있는', '없는', '있는', '없는', '하는', '된', '된', '될'
+    ]);
+
+    // 단어 분리 및 빈도수 계산
+    const words = text.split(/\s+/).filter(word => 
+        word.length > 1 && !stopWords.has(word)
+    );
+    
+    const wordFreq = {};
+    words.forEach(word => {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+    });
+
+    // 빈도수에 따른 점수 계산 (최대 빈도수를 100점으로)
+    const maxFreq = Math.max(...Object.values(wordFreq));
+    const keywords = Object.entries(wordFreq)
+        .map(([word, freq]) => ({
+            text: word,
+            score: Math.round((freq / maxFreq) * 100)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10); // 상위 10개 키워드만 반환
+
+    return keywords.map(k => k.text); // 키워드 텍스트만 반환
+}
+
+// AI 응답 생성 시 로그 저장
+async function generateAndLogResponse(subject, from, content) {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "system",
+                    content: "다음 메일에 대한 적절한 응답을 작성해주세요. 응답은 공식적이고 전문적인 톤으로 작성해주세요."
+                },
+                {
+                    role: "user",
+                    content: `제목: ${subject}
+보낸 사람: ${from}
+내용: ${content}
+
+응답 스타일: ${autoReplySettings.responseStyle}
+주요 키워드: ${autoReplySettings.keywords}
+제외할 키워드: ${autoReplySettings.excludeKeywords}`
+                }
+            ],
+            temperature: 0.7
+        });
+
+        const response = completion.choices[0].message.content;
+        
+        // 로그 저장
+        await fetch('http://localhost:3000/ai-response-logger/logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                subject,
+                from,
+                originalContent: content,
+                aiResponse: response,
+                responseType: 'GPT',
+                keywords: extractKeywords(content),
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        return response;
+    } catch (error) {
+        console.error('AI 응답 생성 중 오류:', error);
+        throw error;
+    }
+}
 
 export default router; 

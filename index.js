@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import autoReplyRouter from './auto-reply.js';
 import keywordExtractorRouter from './keyword-extractor.js';
 import mailStatsRouter from './mail-stats.js';
+import aiResponseLogger from './ai-response-logger.js';
 
 dotenv.config();
 
@@ -579,6 +580,9 @@ app.use('/keyword-extractor', keywordExtractorRouter);
 
 // 메일 통계 라우터 추가
 app.use('/mail-stats', mailStatsRouter);
+
+// AI 응답 로거 라우터 추가
+app.use('/ai-response-logger', aiResponseLogger);
 
 app.listen(port, () => {
   console.log(`🚀 서버 실행 중: http://localhost:${port}`);

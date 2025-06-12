@@ -184,24 +184,29 @@ router.get('/mails', async (req, res) => {
         body = Buffer.from(messageData.data.payload.body.data, 'base64').toString('utf-8');
       }
 
-      // GPT를 사용하여 키워드 추출
-      const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "다음 메일에서 중요한 키워드와 주제를 추출해주세요. 각 키워드의 중요도를 0-100 사이의 점수로 평가해주세요."
-          },
-          {
-            role: "user",
-            content: `제목: ${subject}\n보낸 사람: ${from}\n내용: ${body}`
-          }
-        ],
-        temperature: 0.3,
-        maxTokens: 150
-      });
+      let keywords;
+      try {
+        // ChatGPT API를 사용한 키워드 추출 시도
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "다음 메일에서 중요한 키워드와 주제를 추출해주세요. 각 키워드의 중요도를 0-100 사이의 점수로 평가해주세요."
+            },
+            {
+              role: "user",
+              content: `제목: ${subject}\n보낸 사람: ${from}\n내용: ${body}`
+            }
+          ],
+          temperature: 0.3,
+        });
 
-      const keywords = JSON.parse(completion.choices[0].message.content);
+        keywords = JSON.parse(completion.choices[0].message.content);
+      } catch (error) {
+        // ChatGPT API 실패 시 기본 키워드 추출 사용
+        keywords = extractKeywordsBasic(subject + " " + body);
+      }
 
       return {
         subject,
@@ -213,84 +218,45 @@ router.get('/mails', async (req, res) => {
 
     res.json(mails);
   } catch (error) {
-    console.error("메일 목록 가져오기 실패:", error);
-    res.status(500).json({ error: error.message });
+    console.error('Error:', error);
+    res.status(500).json({ error: '메일을 불러오는 중 오류가 발생했습니다.' });
   }
 });
 
-// 키워드 추출 함수
-async function extractKeywords(text) {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [{
-          role: "system",
-          content: "다음 텍스트에서 가장 중요한 5개의 키워드를 추출하고, 각 키워드의 중요도를 0-100 사이의 점수로 평가해주세요. 응답은 JSON 형식으로 해주세요: {\"keywords\": [{\"text\": \"키워드1\", \"score\": 90}, ...]}"
-        }, {
-          role: "user",
-          content: text
-        }],
-        temperature: 0.3
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      // 토큰 한도 초과 에러 체크
-      if (error.error?.code === 'insufficient_quota' || error.error?.message?.includes('quota')) {
-        console.log('GPT API 토큰 한도 초과, 기본 텍스트 분석 사용');
-        return extractKeywordsBasic(text);
-      }
-      throw new Error(error.error?.message || 'GPT API 호출 실패');
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
-    const result = JSON.parse(content);
-    return result.keywords;
-  } catch (error) {
-    console.error('GPT API 호출 실패:', error);
-    console.log('기본 텍스트 분석으로 전환');
-    return extractKeywordsBasic(text);
-  }
-}
-
-// 기본 텍스트 분석을 통한 키워드 추출 함수
+// 기본 키워드 추출 함수
 function extractKeywordsBasic(text) {
-  // 불용어 목록
-  const stopWords = ['이', '그', '저', '것', '수', '등', '및', '또는', '그리고', '하지만', '그래서', '때문에', '위해', '대해', '관련', '의', '가', '을', '를', '에', '로', '으로', '와', '과', '은', '는', '이런', '저런', '그런', '이러한', '저러한', '그러한', '이런', '저런', '그런', '이것', '저것', '그것', '이런', '저런', '그런', '이러한', '저러한', '그러한', '이런', '저런', '그런', '이것', '저것', '그것'];
+  // HTML 태그 제거
+  text = text.replace(/<[^>]*>/g, '');
   
-  // 텍스트 전처리
-  text = text.toLowerCase()
-    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // 특수문자 제거 및 소문자 변환
+  text = text.toLowerCase().replace(/[^\w\s가-힣]/g, ' ');
+  
+  // 불용어 목록
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'about',
+    '이', '그', '저', '것', '수', '등', '및', '또는', '그리고', '하지만', '그래서', '때문에',
+    '위해', '대해', '관련', '대한', '있는', '없는', '있는', '없는', '하는', '된', '된', '될'
+  ]);
 
   // 단어 분리 및 빈도수 계산
-  const words = text.split(' ');
-  const wordFreq = {};
+  const words = text.split(/\s+/).filter(word => 
+    word.length > 1 && !stopWords.has(word)
+  );
   
+  const wordFreq = {};
   words.forEach(word => {
-    if (word.length > 1 && !stopWords.includes(word)) {
-      wordFreq[word] = (wordFreq[word] || 0) + 1;
-    }
+    wordFreq[word] = (wordFreq[word] || 0) + 1;
   });
 
-  // 빈도수에 따른 점수 계산 (0-100)
+  // 빈도수에 따른 점수 계산 (최대 빈도수를 100점으로)
   const maxFreq = Math.max(...Object.values(wordFreq));
   const keywords = Object.entries(wordFreq)
-    .map(([text, freq]) => ({
-      text,
+    .map(([word, freq]) => ({
+      text: word,
       score: Math.round((freq / maxFreq) * 100)
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 5); // 상위 5개 키워드만 반환
+    .slice(0, 10); // 상위 10개 키워드만 반환
 
   return keywords;
 }
