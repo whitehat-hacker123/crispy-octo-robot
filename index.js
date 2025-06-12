@@ -82,109 +82,105 @@ app.get("/", (req, res) => {
         <head>
             <meta charset="UTF-8">
             <title>메일 에이전트</title>
-            <script src="/node_modules/three/build/three.min.js"></script>
             <style>
                 body {
                     margin: 0;
+                    padding: 0;
+                    font-family: 'Arial', sans-serif;
+                    background: #1a1a1a;
+                    color: #fff;
                     overflow: hidden;
-                    background: #000;
-                    font-family: Arial, sans-serif;
                 }
+
                 #canvas {
                     position: fixed;
                     top: 0;
                     left: 0;
-                    width: 100%;
-                    height: 100%;
+                    z-index: 1;
                 }
-                .menu {
-                    position: fixed;
-                    top: 20px;
-                    left: 20px;
-                    z-index: 100;
-                    background: rgba(0, 0, 0, 0.8);
-                    padding: 20px;
-                    border-radius: 10px;
-                    color: white;
-                }
-                .menu a {
-                    display: block;
-                    color: #26d0ce;
-                    text-decoration: none;
-                    margin: 10px 0;
-                    padding: 10px;
-                    border-radius: 5px;
-                    transition: all 0.3s ease;
-                }
-                .menu a:hover {
-                    background: rgba(38, 208, 206, 0.2);
-                    transform: translateX(10px);
-                }
-                .stats {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    z-index: 100;
-                    background: rgba(0, 0, 0, 0.8);
-                    padding: 20px;
-                    border-radius: 10px;
-                    color: white;
-                }
+
                 .welcome {
                     position: fixed;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
                     text-align: center;
-                    color: white;
-                    z-index: 100;
-                    background: rgba(0, 0, 0, 0.8);
-                    padding: 30px;
-                    border-radius: 15px;
+                    z-index: 2;
+                    background: rgba(0, 0, 0, 0.7);
+                    padding: 2rem;
+                    border-radius: 1rem;
+                    backdrop-filter: blur(10px);
                 }
+
                 .welcome h1 {
+                    font-size: 3rem;
+                    margin: 0;
                     color: #26d0ce;
-                    margin-bottom: 20px;
                 }
+
                 .welcome p {
-                    margin: 10px 0;
-                    font-size: 1.2em;
+                    font-size: 1.2rem;
+                    margin: 1rem 0;
+                    color: #fff;
                 }
-                .loading {
+
+                .menu {
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: #000;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    z-index: 1000;
-                    transition: opacity 0.5s ease;
+                    left: 2rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: rgba(0, 0, 0, 0.7);
+                    padding: 1.5rem;
+                    border-radius: 1rem;
+                    backdrop-filter: blur(10px);
+                    z-index: 2;
                 }
-                .loading.hidden {
-                    opacity: 0;
-                    pointer-events: none;
-                }
-                .loading-spinner {
-                    width: 50px;
-                    height: 50px;
-                    border: 5px solid #26d0ce;
-                    border-top: 5px solid transparent;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                    margin-bottom: 20px;
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                .loading-text {
+
+                .menu h2 {
+                    margin: 0 0 1rem 0;
                     color: #26d0ce;
-                    font-size: 24px;
-                    text-align: center;
+                }
+
+                .menu a {
+                    display: block;
+                    color: #fff;
+                    text-decoration: none;
+                    padding: 0.5rem 0;
+                    transition: color 0.3s;
+                }
+
+                .menu a:hover {
+                    color: #26d0ce;
+                }
+
+                .stats {
+                    position: fixed;
+                    right: 2rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: rgba(0, 0, 0, 0.7);
+                    padding: 1.5rem;
+                    border-radius: 1rem;
+                    backdrop-filter: blur(10px);
+                    z-index: 2;
+                }
+
+                .stats h3 {
+                    margin: 0 0 1rem 0;
+                    color: #26d0ce;
+                }
+
+                .stats p {
+                    margin: 0.5rem 0;
+                    color: #fff;
+                }
+
+                .particle {
+                    position: absolute;
+                    background: #26d0ce;
+                    border-radius: 50%;
+                    pointer-events: none;
+                    opacity: 0.6;
                 }
             </style>
         </head>
@@ -216,158 +212,61 @@ app.get("/", (req, res) => {
                 </div>
             </div>
 
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">3D 환경 초기화 중...</div>
-            </div>
-
             <script>
-                let scene, camera, renderer;
-                let particles = [];
-                let centralSphere;
-                let isInitialized = false;
-
-                function init() {
-                    if (isInitialized) return;
-                    
-                    // 씬 설정
-                    scene = new THREE.Scene();
-                    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                    renderer = new THREE.WebGLRenderer({ antialias: true });
-                    renderer.setSize(window.innerWidth, window.innerHeight);
-                    document.getElementById('canvas').appendChild(renderer.domElement);
-
-                    // 조명 설정
-                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                    scene.add(ambientLight);
-
-                    const pointLight = new THREE.PointLight(0x26d0ce, 1);
-                    pointLight.position.set(10, 10, 10);
-                    scene.add(pointLight);
-
-                    // 중앙 구체 생성
-                    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
-                    const sphereMaterial = new THREE.MeshPhongMaterial({
-                        color: 0x26d0ce,
-                        transparent: true,
-                        opacity: 0.8,
-                        shininess: 100
-                    });
-                    centralSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                    scene.add(centralSphere);
-
-                    // 입자 생성
-                    const particleCount = 1000;
-                    const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-                    
-                    for (let i = 0; i < particleCount; i++) {
-                        const material = new THREE.MeshPhongMaterial({
-                            color: new THREE.Color(
-                                Math.random(),
-                                Math.random(),
-                                Math.random()
-                            ),
-                            transparent: true,
-                            opacity: 0.8
-                        });
-                        
-                        const particle = new THREE.Mesh(particleGeometry, material);
-                        
-                        // 랜덤 위치 설정
-                        const radius = 5 + Math.random() * 5;
-                        const theta = Math.random() * Math.PI * 2;
-                        const phi = Math.random() * Math.PI;
-                        
-                        particle.position.x = radius * Math.sin(phi) * Math.cos(theta);
-                        particle.position.y = radius * Math.sin(phi) * Math.sin(theta);
-                        particle.position.z = radius * Math.cos(phi);
-                        
-                        particle.userData = {
-                            originalPosition: particle.position.clone(),
-                            speed: 0.001 + Math.random() * 0.002,
-                            angle: Math.random() * Math.PI * 2
-                        };
-                        
-                        scene.add(particle);
-                        particles.push(particle);
+                // 2D 파티클 시스템
+                class Particle {
+                    constructor(x, y) {
+                        this.x = x;
+                        this.y = y;
+                        this.size = Math.random() * 3 + 1;
+                        this.speedX = Math.random() * 2 - 1;
+                        this.speedY = Math.random() * 2 - 1;
+                        this.element = document.createElement('div');
+                        this.element.className = 'particle';
+                        this.element.style.width = this.size + 'px';
+                        this.element.style.height = this.size + 'px';
+                        this.element.style.left = this.x + 'px';
+                        this.element.style.top = this.y + 'px';
+                        document.getElementById('canvas').appendChild(this.element);
                     }
 
-                    // 카메라 위치 설정
-                    camera.position.z = 15;
+                    update() {
+                        this.x += this.speedX;
+                        this.y += this.speedY;
 
-                    isInitialized = true;
+                        if (this.x < 0 || this.x > window.innerWidth) this.speedX *= -1;
+                        if (this.y < 0 || this.y > window.innerHeight) this.speedY *= -1;
+
+                        this.element.style.left = this.x + 'px';
+                        this.element.style.top = this.y + 'px';
+                    }
                 }
 
-                // 마우스 컨트롤
-                let isDragging = false;
-                let previousMousePosition = {
-                    x: 0,
-                    y: 0
-                };
+                // 파티클 생성
+                const particles = [];
+                const particleCount = 50;
 
-                document.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                });
-
-                document.addEventListener('mousemove', (e) => {
-                    if (isDragging) {
-                        const deltaMove = {
-                            x: e.offsetX - previousMousePosition.x,
-                            y: e.offsetY - previousMousePosition.y
-                        };
-
-                        centralSphere.rotation.y += deltaMove.x * 0.01;
-                        centralSphere.rotation.x += deltaMove.y * 0.01;
-                    }
-
-                    previousMousePosition = {
-                        x: e.offsetX,
-                        y: e.offsetY
-                    };
-                });
-
-                document.addEventListener('mouseup', (e) => {
-                    isDragging = false;
-                });
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle(
+                        Math.random() * window.innerWidth,
+                        Math.random() * window.innerHeight
+                    ));
+                }
 
                 // 애니메이션
                 function animate() {
-                    if (!isInitialized) return;
-                    
+                    particles.forEach(particle => particle.update());
                     requestAnimationFrame(animate);
-
-                    // 중앙 구체 회전
-                    centralSphere.rotation.y += 0.001;
-                    centralSphere.rotation.x += 0.0005;
-
-                    // 입자 애니메이션
-                    particles.forEach(particle => {
-                        const userData = particle.userData;
-                        userData.angle += userData.speed;
-                        
-                        const radius = 5 + Math.sin(Date.now() * 0.001 + userData.angle) * 2;
-                        const theta = userData.angle;
-                        const phi = Math.sin(Date.now() * 0.0005 + userData.angle) * Math.PI;
-                        
-                        particle.position.x = radius * Math.sin(phi) * Math.cos(theta);
-                        particle.position.y = radius * Math.sin(phi) * Math.sin(theta);
-                        particle.position.z = radius * Math.cos(phi);
-                        
-                        // 입자 크기 변화
-                        const scale = 0.5 + Math.sin(Date.now() * 0.001 + userData.angle) * 0.5;
-                        particle.scale.set(scale, scale, scale);
-                    });
-
-                    renderer.render(scene, camera);
                 }
+
+                animate();
 
                 // 창 크기 조절 대응
                 window.addEventListener('resize', () => {
-                    if (!isInitialized) return;
-                    
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    particles.forEach(particle => {
+                        if (particle.x > window.innerWidth) particle.x = window.innerWidth;
+                        if (particle.y > window.innerHeight) particle.y = window.innerHeight;
+                    });
                 });
 
                 // 통계 업데이트
@@ -385,27 +284,6 @@ app.get("/", (req, res) => {
                         console.error('Error:', error);
                     }
                 }
-
-                // 초기화 및 애니메이션 시작
-                window.addEventListener('load', () => {
-                    try {
-                        init();
-                        animate();
-                        
-                        // 로딩 화면 숨기기
-                        setTimeout(() => {
-                            const loading = document.querySelector('.loading');
-                            loading.classList.add('hidden');
-                            setTimeout(() => {
-                                loading.style.display = 'none';
-                            }, 500);
-                        }, 1000);
-                    } catch (error) {
-                        console.error('Error initializing 3D scene:', error);
-                        document.querySelector('.loading-text').textContent = 
-                            '3D 환경 초기화 실패. 페이지를 새로고침해주세요.';
-                    }
-                });
 
                 // 5초마다 통계 업데이트
                 setInterval(updateStats, 5000);
