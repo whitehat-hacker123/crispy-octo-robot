@@ -76,7 +76,7 @@ const authUrl = oauth2Client.generateAuthUrl({
 
 // 메인 페이지
 app.get("/", (req, res) => {
-    res.send(`
+    const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -141,7 +141,7 @@ app.get("/", (req, res) => {
 
                 .welcome {
                     position: fixed;
-                    top: 50%;
+                    top: 30%;
                     left: 50%;
                     transform: translate(-50%, -50%);
                     text-align: center;
@@ -151,11 +151,30 @@ app.get("/", (req, res) => {
                     border-radius: 1rem;
                     backdrop-filter: blur(10px);
                     transition: all 0.3s ease;
+                    width: 190px;
+                    height: 254px;
+                    transition: 200ms;
                 }
 
-                .welcome:hover {
-                    transform: translate(-50%, -50%) scale(1.2);
-                    background: rgba(0, 0, 0, 0.9);
+                .welcome:active {
+                    width: 180px;
+                    height: 245px;
+                }
+
+                .welcome::before {
+                    content: '';
+                    background: linear-gradient(43deg, rgb(65, 88, 208) 0%, rgb(200, 80, 192) 46%, rgb(255, 204, 112) 100%);
+                    filter: blur(2rem);
+                    opacity: 30%;
+                    width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    z-index: -1;
+                    transition: 200ms;
+                }
+
+                .welcome:hover::before {
+                    opacity: 80%;
                 }
 
                 .welcome h1 {
@@ -163,6 +182,14 @@ app.get("/", (req, res) => {
                     margin: 0;
                     color: #26d0ce;
                     transition: all 0.3s ease;
+                    opacity: 0;
+                    transition-duration: 300ms;
+                    transition-timing-function: ease-in-out;
+                    transition-delay: 100ms;
+                }
+
+                .welcome:hover h1 {
+                    opacity: 1;
                 }
 
                 .welcome p {
@@ -171,6 +198,7 @@ app.get("/", (req, res) => {
                     color: #fff;
                     transition: all 0.3s ease;
                     opacity: 0.5;
+                    transform: translateY(160px);
                 }
 
                 .welcome:hover p {
@@ -180,6 +208,61 @@ app.get("/", (req, res) => {
                 .welcome:hover h1 {
                     transform: scale(1.1);
                     color: #fff;
+                }
+
+                .canvas {
+                    perspective: 800px;
+                    inset: 0;
+                    z-index: 200;
+                    position: absolute;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+                    grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+                    gap: 0px 0px;
+                    grid-template-areas: "tr-1 tr-2 tr-3 tr-4 tr-5"
+                        "tr-6 tr-7 tr-8 tr-9 tr-10"
+                        "tr-11 tr-12 tr-13 tr-14 tr-15"
+                        "tr-16 tr-17 tr-18 tr-19 tr-20"
+                        "tr-21 tr-22 tr-23 tr-24 tr-25";
+                }
+
+                [class^="tr-"] {
+                    width: 100%;
+                    height: 100%;
+                }
+
+                .tr-1:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(20deg) rotateY(-10deg) rotateZ(0deg); }
+                .tr-2:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(20deg) rotateY(-5deg) rotateZ(0deg); }
+                .tr-3:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
+                .tr-4:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(20deg) rotateY(5deg) rotateZ(0deg); }
+                .tr-5:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(20deg) rotateY(10deg) rotateZ(0deg); }
+                .tr-6:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(10deg) rotateY(-10deg) rotateZ(0deg); }
+                .tr-7:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(10deg) rotateY(-5deg) rotateZ(0deg); }
+                .tr-8:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(10deg) rotateY(0deg) rotateZ(0deg); }
+                .tr-9:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(10deg) rotateY(5deg) rotateZ(0deg); }
+                .tr-10:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(10deg) rotateY(10deg) rotateZ(0deg); }
+                .tr-11:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(0deg) rotateY(-10deg) rotateZ(0deg); }
+                .tr-12:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(0deg) rotateY(-5deg) rotateZ(0deg); }
+                .tr-13:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+                .tr-14:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(0deg) rotateY(5deg) rotateZ(0deg); }
+                .tr-15:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(0deg) rotateY(10deg) rotateZ(0deg); }
+                .tr-16:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-10deg) rotateY(-10deg) rotateZ(0deg); }
+                .tr-17:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-10deg) rotateY(-5deg) rotateZ(0deg); }
+                .tr-18:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-10deg) rotateY(0deg) rotateZ(0deg); }
+                .tr-19:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-10deg) rotateY(5deg) rotateZ(0deg); }
+                .tr-20:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-10deg) rotateY(10deg) rotateZ(0deg); }
+                .tr-21:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-20deg) rotateY(-10deg) rotateZ(0deg); }
+                .tr-22:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-20deg) rotateY(-5deg) rotateZ(0deg); }
+                .tr-23:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
+                .tr-24:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-20deg) rotateY(5deg) rotateZ(0deg); }
+                .tr-25:hover ~ .welcome { transform: translate(-50%, -50%) rotateX(-20deg) rotateY(10deg) rotateZ(0deg); }
+
+                .noselect {
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    -moz-user-select: none;
+                    -ms-user-select: none;
+                    user-select: none;
                 }
 
                 .menu {
@@ -393,6 +476,34 @@ app.get("/", (req, res) => {
             <div class="gradient-overlay"></div>
             <div class="mouse-tracker"></div>
             
+            <div class="canvas noselect">
+                <div class="tr-1"></div>
+                <div class="tr-2"></div>
+                <div class="tr-3"></div>
+                <div class="tr-4"></div>
+                <div class="tr-5"></div>
+                <div class="tr-6"></div>
+                <div class="tr-7"></div>
+                <div class="tr-8"></div>
+                <div class="tr-9"></div>
+                <div class="tr-10"></div>
+                <div class="tr-11"></div>
+                <div class="tr-12"></div>
+                <div class="tr-13"></div>
+                <div class="tr-14"></div>
+                <div class="tr-15"></div>
+                <div class="tr-16"></div>
+                <div class="tr-17"></div>
+                <div class="tr-18"></div>
+                <div class="tr-19"></div>
+                <div class="tr-20"></div>
+                <div class="tr-21"></div>
+                <div class="tr-22"></div>
+                <div class="tr-23"></div>
+                <div class="tr-24"></div>
+                <div class="tr-25"></div>
+            </div>
+
             <div class="welcome">
                 <h1>🤖 메일 에이전트</h1>
                 <p>AI 기반 스마트 메일 관리 시스템</p>
@@ -476,8 +587,8 @@ app.get("/", (req, res) => {
                         const x = e.clientX - rect.left;
                         const y = e.clientY - rect.top;
                         
-                        card.style.setProperty('--mouse-x', `${x}px`);
-                        card.style.setProperty('--mouse-y', `${y}px`);
+                        card.style.setProperty('--mouse-x', x + 'px');
+                        card.style.setProperty('--mouse-y', y + 'px');
                     });
                 });
 
@@ -503,7 +614,8 @@ app.get("/", (req, res) => {
             </script>
         </body>
         </html>
-    `);
+    `;
+    res.send(html);
 });
 
 // Gmail 인증 콜백
