@@ -139,6 +139,18 @@ app.get("/", (req, res) => {
                     z-index: 1;
                 }
 
+                .mosaic-bg {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==');
+                    opacity: 0.1;
+                    z-index: 1;
+                    pointer-events: none;
+                }
+
                 .welcome {
                     position: fixed;
                     top: 30%;
@@ -150,64 +162,75 @@ app.get("/", (req, res) => {
                     padding: 2rem;
                     border-radius: 1rem;
                     backdrop-filter: blur(10px);
-                    transition: all 0.3s ease;
-                    width: 190px;
-                    height: 254px;
-                    transition: 200ms;
-                }
-
-                .welcome:active {
-                    width: 180px;
-                    height: 245px;
+                    transition: all 0.5s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    position: relative;
+                    overflow: hidden;
                 }
 
                 .welcome::before {
                     content: '';
-                    background: linear-gradient(43deg, rgb(65, 88, 208) 0%, rgb(200, 80, 192) 46%, rgb(255, 204, 112) 100%);
-                    filter: blur(2rem);
-                    opacity: 30%;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 100%;
                     height: 100%;
+                    border: 2px solid transparent;
+                    border-radius: 1rem;
+                    transition: all 0.5s ease;
+                }
+
+                .welcome::after {
+                    content: '';
                     position: absolute;
+                    top: -2px;
+                    left: -2px;
+                    width: calc(100% + 4px);
+                    height: calc(100% + 4px);
+                    background: linear-gradient(45deg, 
+                        #00ff87, /* 네온 그린 */
+                        #00b8ff, /* 사이버 블루 */
+                        #ff00ff, /* 네온 핑크 */
+                        #00ff87  /* 네온 그린 */
+                    );
+                    background-size: 300% 300%;
+                    animation: borderMove 8s linear infinite;
+                    border-radius: 1rem;
                     z-index: -1;
-                    transition: 200ms;
+                    opacity: 0;
+                    transition: all 0.5s ease;
+                    filter: blur(1px);
                 }
 
                 .welcome:hover::before {
-                    opacity: 80%;
+                    border-color: transparent;
+                    box-shadow: 0 0 30px rgba(0, 255, 135, 0.3);
+                }
+
+                .welcome:hover::after {
+                    opacity: 1;
                 }
 
                 .welcome h1 {
-                    font-size: 3rem;
+                    font-size: 2.5rem;
                     margin: 0;
-                    color: #26d0ce;
-                    transition: all 0.3s ease;
-                    opacity: 0;
-                    transition-duration: 300ms;
-                    transition-timing-function: ease-in-out;
-                    transition-delay: 100ms;
-                }
-
-                .welcome:hover h1 {
-                    opacity: 1;
+                    color: #fff;
+                    transition: all 0.5s ease;
+                    white-space: nowrap;
                 }
 
                 .welcome p {
                     font-size: 1.2rem;
-                    margin: 1rem 0;
+                    margin: 0;
                     color: #fff;
-                    transition: all 0.3s ease;
+                    transition: all 0.5s ease;
                     opacity: 0.5;
-                    transform: translateY(160px);
                 }
 
                 .welcome:hover p {
                     opacity: 0.3;
-                }
-
-                .welcome:hover h1 {
-                    transform: scale(1.1);
-                    color: #fff;
                 }
 
                 .canvas {
@@ -279,32 +302,111 @@ app.get("/", (req, res) => {
                 }
 
                 .menu:hover {
-                    transform: translateY(-50%) scale(1.3);
-                    background: rgba(0, 0, 0, 0.9);
+                    top: 0;
+                    height: 100vh;
+                    transform: none;
+                    border-radius: 0 1rem 1rem 0;
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
                 }
 
                 .menu h2 {
                     margin: 0 0 1rem 0;
                     color: #26d0ce;
+                    font-size: 1.5rem;
+                }
+
+                .menu:hover h2 {
+                    font-size: 1.8rem;
+                    margin-bottom: 2rem;
                 }
 
                 .menu a {
                     display: block;
                     color: #fff;
                     text-decoration: none;
-                    padding: 0.5rem 0;
-                    transition: all 0.3s ease;
-                    opacity: 0.5;
+                    padding: 0.8rem 1.2rem;
+                    transition: all 0.5s ease;
+                    font-size: 1.1rem;
+                    position: relative;
+                    border-radius: 0.5rem;
+                    overflow: hidden;
                 }
 
-                .menu:hover a {
-                    opacity: 0.3;
+                .menu a::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    border: 2px solid transparent;
+                    border-radius: 0.5rem;
+                    transition: all 0.5s ease;
+                }
+
+                .menu a::after {
+                    content: '';
+                    position: absolute;
+                    top: -2px;
+                    left: -2px;
+                    width: calc(100% + 4px);
+                    height: calc(100% + 4px);
+                    background: linear-gradient(45deg, 
+                        #00ff87, /* 네온 그린 */
+                        #00b8ff, /* 사이버 블루 */
+                        #ff00ff, /* 네온 핑크 */
+                        #00ff87  /* 네온 그린 */
+                    );
+                    background-size: 300% 300%;
+                    animation: borderMove 8s linear infinite;
+                    border-radius: 0.5rem;
+                    z-index: -1;
+                    opacity: 0;
+                    transition: all 0.5s ease;
+                    filter: blur(1px);
+                }
+
+                @keyframes borderMove {
+                    0% {
+                        background-position: 0% 0%;
+                        filter: blur(1px) brightness(1);
+                    }
+                    25% {
+                        filter: blur(1px) brightness(1.2);
+                    }
+                    50% {
+                        background-position: 100% 100%;
+                        filter: blur(1px) brightness(1);
+                    }
+                    75% {
+                        filter: blur(1px) brightness(1.2);
+                    }
+                    100% {
+                        background-position: 0% 0%;
+                        filter: blur(1px) brightness(1);
+                    }
                 }
 
                 .menu a:hover {
-                    color: #26d0ce;
-                    opacity: 1;
                     transform: translateX(20px);
+                }
+
+                .menu a:hover::before {
+                    border-color: transparent;
+                    box-shadow: 0 0 20px rgba(0, 255, 135, 0.3);
+                }
+
+                .menu a:hover::after {
+                    opacity: 1;
+                }
+
+                .menu:hover a {
+                    padding: 0.8rem 1.2rem;
+                    font-size: 1.2rem;
+                    margin: 0.5rem 0;
                 }
 
                 .stats {
@@ -321,29 +423,42 @@ app.get("/", (req, res) => {
                 }
 
                 .stats:hover {
-                    transform: translateY(-50%) scale(1.3);
-                    background: rgba(0, 0, 0, 0.9);
+                    top: 0;
+                    height: 100vh;
+                    transform: none;
+                    border-radius: 1rem 0 0 1rem;
+                    padding: 2rem;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
                 }
 
                 .stats h3 {
                     margin: 0 0 1rem 0;
                     color: #26d0ce;
+                    font-size: 1.5rem;
+                }
+
+                .stats:hover h3 {
+                    font-size: 1.8rem;
+                    margin-bottom: 2rem;
                 }
 
                 .stats p {
                     margin: 0.5rem 0;
                     color: #fff;
                     transition: all 0.3s ease;
-                    opacity: 0.5;
+                    font-size: 1.1rem;
                 }
 
                 .stats:hover p {
-                    opacity: 0.3;
+                    margin: 1rem 0;
+                    font-size: 1.2rem;
                 }
 
                 .stats p:hover {
-                    opacity: 1;
                     transform: translateX(-20px);
+                    color: #26d0ce;
                 }
 
                 /* 플랜 카드 스타일 */
@@ -474,6 +589,7 @@ app.get("/", (req, res) => {
         </head>
         <body>
             <div class="gradient-overlay"></div>
+            <div class="mosaic-bg"></div>
             <div class="mouse-tracker"></div>
             
             <div class="canvas noselect">
@@ -507,7 +623,6 @@ app.get("/", (req, res) => {
             <div class="welcome">
                 <h1>🤖 메일 에이전트</h1>
                 <p>AI 기반 스마트 메일 관리 시스템</p>
-                <p>시작하려면 왼쪽 메뉴를 선택하세요</p>
             </div>
 
             <div class="menu">
