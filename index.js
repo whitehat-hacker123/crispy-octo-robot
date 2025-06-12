@@ -1,18 +1,26 @@
 import express from "express";
-import { google } from "googleapis";
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
+import cors from "cors";
+import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
+import dotenv from "dotenv";
+import autoReplyRouter from "./auto-reply.js";
+import keywordExtractorRouter from "./keyword-extractor.js";
+import aiResponseLoggerRouter from "./ai-response-logger.js";
+import intentDetectorRouter from "./intent-detector.js";
+import mailPriorityRouter from "./mail-priority.js";
 import { exec } from "child_process";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import autoReplyRouter from './auto-reply.js';
-import keywordExtractorRouter from './keyword-extractor.js';
-import mailStatsRouter from './mail-stats.js';
-import aiResponseLogger from './ai-response-logger.js';
-import intentDetectorRouter from "./intent-detector.js";
-import mailPriorityRouter from "./mail-priority.js";
+import { fileURLToPath } from 'url';
 import threeDHomeRouter from "./3d-home.js";
+
+// ESM 환경에서 __dirname, __filename 정의
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -41,7 +49,12 @@ const oauth2Client = new google.auth.OAuth2(
 // OAuth2 클라이언트를 app.locals에 저장
 app.locals.oauth2Client = oauth2Client;
 
+app.use(cors());
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// 정적 파일 제공 설정
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // 보안 미들웨어 설정
 app.use(helmet());
@@ -63,174 +76,227 @@ const authUrl = oauth2Client.generateAuthUrl({
 
 // 메인 페이지
 app.get("/", (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>메일 에이전트</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.162.0/three.min.js"></script>
-        <style>
-            body {
-                margin: 0;
-                overflow: hidden;
-                background: #000;
-                font-family: Arial, sans-serif;
-            }
-            #canvas {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-            }
-            .menu {
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                z-index: 100;
-                background: rgba(0, 0, 0, 0.8);
-                padding: 20px;
-                border-radius: 10px;
-                color: white;
-            }
-            .menu a {
-                display: block;
-                color: #26d0ce;
-                text-decoration: none;
-                margin: 10px 0;
-                padding: 10px;
-                border-radius: 5px;
-                transition: all 0.3s ease;
-            }
-            .menu a:hover {
-                background: rgba(38, 208, 206, 0.2);
-                transform: translateX(10px);
-            }
-            .stats {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 100;
-                background: rgba(0, 0, 0, 0.8);
-                padding: 20px;
-                border-radius: 10px;
-                color: white;
-            }
-            .welcome {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                text-align: center;
-                color: white;
-                z-index: 100;
-                background: rgba(0, 0, 0, 0.8);
-                padding: 30px;
-                border-radius: 15px;
-            }
-            .welcome h1 {
-                color: #26d0ce;
-                margin-bottom: 20px;
-            }
-            .welcome p {
-                margin: 10px 0;
-                font-size: 1.2em;
-            }
-            .loading {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: #26d0ce;
-                font-size: 24px;
-                z-index: 1000;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="canvas"></div>
-        
-        <div class="welcome">
-            <h1>🤖 메일 에이전트</h1>
-            <p>AI 기반 스마트 메일 관리 시스템</p>
-            <p>시작하려면 왼쪽 메뉴를 선택하세요</p>
-        </div>
-
-        <div class="menu">
-            <h2>메뉴</h2>
-            <a href="/auto-reply">🤖 자동 응답</a>
-            <a href="/keyword-extractor">🔑 키워드 추출</a>
-            <a href="/ai-response-logger">📝 AI 응답 로그</a>
-            <a href="/intent-detector">🔍 의도 분석</a>
-            <a href="/mail-priority">🔢 우선순위</a>
-        </div>
-
-        <div class="stats">
-            <h3>실시간 통계</h3>
-            <div id="stats">
-                <p>📧 총 메일: 로딩 중...</p>
-                <p>🤖 자동 응답: 로딩 중...</p>
-                <p>🔑 키워드: 로딩 중...</p>
-                <p>⏰ 대기 중: 로딩 중...</p>
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>메일 에이전트</title>
+            <script src="/node_modules/three/build/three.min.js"></script>
+            <style>
+                body {
+                    margin: 0;
+                    overflow: hidden;
+                    background: #000;
+                    font-family: Arial, sans-serif;
+                }
+                #canvas {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                }
+                .menu {
+                    position: fixed;
+                    top: 20px;
+                    left: 20px;
+                    z-index: 100;
+                    background: rgba(0, 0, 0, 0.8);
+                    padding: 20px;
+                    border-radius: 10px;
+                    color: white;
+                }
+                .menu a {
+                    display: block;
+                    color: #26d0ce;
+                    text-decoration: none;
+                    margin: 10px 0;
+                    padding: 10px;
+                    border-radius: 5px;
+                    transition: all 0.3s ease;
+                }
+                .menu a:hover {
+                    background: rgba(38, 208, 206, 0.2);
+                    transform: translateX(10px);
+                }
+                .stats {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 100;
+                    background: rgba(0, 0, 0, 0.8);
+                    padding: 20px;
+                    border-radius: 10px;
+                    color: white;
+                }
+                .welcome {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    color: white;
+                    z-index: 100;
+                    background: rgba(0, 0, 0, 0.8);
+                    padding: 30px;
+                    border-radius: 15px;
+                }
+                .welcome h1 {
+                    color: #26d0ce;
+                    margin-bottom: 20px;
+                }
+                .welcome p {
+                    margin: 10px 0;
+                    font-size: 1.2em;
+                }
+                .loading {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #000;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                    transition: opacity 0.5s ease;
+                }
+                .loading.hidden {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+                .loading-spinner {
+                    width: 50px;
+                    height: 50px;
+                    border: 5px solid #26d0ce;
+                    border-top: 5px solid transparent;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 20px;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                .loading-text {
+                    color: #26d0ce;
+                    font-size: 24px;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="canvas"></div>
+            
+            <div class="welcome">
+                <h1>🤖 메일 에이전트</h1>
+                <p>AI 기반 스마트 메일 관리 시스템</p>
+                <p>시작하려면 왼쪽 메뉴를 선택하세요</p>
             </div>
-        </div>
 
-        <div class="loading">3D 환경 로딩 중...</div>
+            <div class="menu">
+                <h2>메뉴</h2>
+                <a href="/auto-reply">🤖 자동 응답</a>
+                <a href="/keyword-extractor">🔑 키워드 추출</a>
+                <a href="/ai-response-logger">📝 AI 응답 로그</a>
+                <a href="/intent-detector">🔍 의도 분석</a>
+                <a href="/mail-priority">🔢 우선순위</a>
+            </div>
 
-        <script>
-            // Three.js 로딩 확인
-            if (typeof THREE === 'undefined') {
-                console.error('Three.js가 로드되지 않았습니다.');
-                document.querySelector('.loading').textContent = '3D 라이브러리 로딩 실패. 페이지를 새로고침해주세요.';
-            } else {
-                // 씬 설정
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                document.getElementById('canvas').appendChild(renderer.domElement);
+            <div class="stats">
+                <h3>실시간 통계</h3>
+                <div id="stats">
+                    <p>📧 총 메일: 로딩 중...</p>
+                    <p>🤖 자동 응답: 로딩 중...</p>
+                    <p>🔑 키워드: 로딩 중...</p>
+                    <p>⏰ 대기 중: 로딩 중...</p>
+                </div>
+            </div>
 
-                // 조명 설정
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambientLight);
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">3D 환경 초기화 중...</div>
+            </div>
 
-                const pointLight = new THREE.PointLight(0x26d0ce, 1);
-                pointLight.position.set(10, 10, 10);
-                scene.add(pointLight);
+            <script>
+                let scene, camera, renderer;
+                let particles = [];
+                let centralSphere;
+                let isInitialized = false;
 
-                // 메일 큐브 생성
-                const mailCubes = [];
-                const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-                const cubeMaterial = new THREE.MeshPhongMaterial({
-                    color: 0x26d0ce,
-                    transparent: true,
-                    opacity: 0.8,
-                    shininess: 100
-                });
+                function init() {
+                    if (isInitialized) return;
+                    
+                    // 씬 설정
+                    scene = new THREE.Scene();
+                    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    renderer = new THREE.WebGLRenderer({ antialias: true });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    document.getElementById('canvas').appendChild(renderer.domElement);
 
-                // 메일 큐브 생성 함수
-                function createMailCube(x, y, z) {
-                    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-                    cube.position.set(x, y, z);
-                    cube.userData = {
-                        originalY: y,
-                        speed: Math.random() * 0.02 + 0.01
-                    };
-                    scene.add(cube);
-                    mailCubes.push(cube);
+                    // 조명 설정
+                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                    scene.add(ambientLight);
+
+                    const pointLight = new THREE.PointLight(0x26d0ce, 1);
+                    pointLight.position.set(10, 10, 10);
+                    scene.add(pointLight);
+
+                    // 중앙 구체 생성
+                    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+                    const sphereMaterial = new THREE.MeshPhongMaterial({
+                        color: 0x26d0ce,
+                        transparent: true,
+                        opacity: 0.8,
+                        shininess: 100
+                    });
+                    centralSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                    scene.add(centralSphere);
+
+                    // 입자 생성
+                    const particleCount = 1000;
+                    const particleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const material = new THREE.MeshPhongMaterial({
+                            color: new THREE.Color(
+                                Math.random(),
+                                Math.random(),
+                                Math.random()
+                            ),
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        
+                        const particle = new THREE.Mesh(particleGeometry, material);
+                        
+                        // 랜덤 위치 설정
+                        const radius = 5 + Math.random() * 5;
+                        const theta = Math.random() * Math.PI * 2;
+                        const phi = Math.random() * Math.PI;
+                        
+                        particle.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                        particle.position.y = radius * Math.sin(phi) * Math.sin(theta);
+                        particle.position.z = radius * Math.cos(phi);
+                        
+                        particle.userData = {
+                            originalPosition: particle.position.clone(),
+                            speed: 0.001 + Math.random() * 0.002,
+                            angle: Math.random() * Math.PI * 2
+                        };
+                        
+                        scene.add(particle);
+                        particles.push(particle);
+                    }
+
+                    // 카메라 위치 설정
+                    camera.position.z = 15;
+
+                    isInitialized = true;
                 }
-
-                // 메일 큐브 배치
-                for (let i = 0; i < 20; i++) {
-                    const x = (Math.random() - 0.5) * 20;
-                    const y = (Math.random() - 0.5) * 20;
-                    const z = (Math.random() - 0.5) * 20;
-                    createMailCube(x, y, z);
-                }
-
-                // 카메라 위치 설정
-                camera.position.z = 15;
 
                 // 마우스 컨트롤
                 let isDragging = false;
@@ -250,10 +316,8 @@ app.get("/", (req, res) => {
                             y: e.offsetY - previousMousePosition.y
                         };
 
-                        mailCubes.forEach(cube => {
-                            cube.rotation.y += deltaMove.x * 0.01;
-                            cube.rotation.x += deltaMove.y * 0.01;
-                        });
+                        centralSphere.rotation.y += deltaMove.x * 0.01;
+                        centralSphere.rotation.x += deltaMove.y * 0.01;
                     }
 
                     previousMousePosition = {
@@ -268,13 +332,30 @@ app.get("/", (req, res) => {
 
                 // 애니메이션
                 function animate() {
+                    if (!isInitialized) return;
+                    
                     requestAnimationFrame(animate);
 
-                    // 메일 큐브 애니메이션
-                    mailCubes.forEach(cube => {
-                        // 부드러운 상하 움직임
-                        cube.position.y = cube.userData.originalY + 
-                            Math.sin(Date.now() * cube.userData.speed) * 0.5;
+                    // 중앙 구체 회전
+                    centralSphere.rotation.y += 0.001;
+                    centralSphere.rotation.x += 0.0005;
+
+                    // 입자 애니메이션
+                    particles.forEach(particle => {
+                        const userData = particle.userData;
+                        userData.angle += userData.speed;
+                        
+                        const radius = 5 + Math.sin(Date.now() * 0.001 + userData.angle) * 2;
+                        const theta = userData.angle;
+                        const phi = Math.sin(Date.now() * 0.0005 + userData.angle) * Math.PI;
+                        
+                        particle.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                        particle.position.y = radius * Math.sin(phi) * Math.sin(theta);
+                        particle.position.z = radius * Math.cos(phi);
+                        
+                        // 입자 크기 변화
+                        const scale = 0.5 + Math.sin(Date.now() * 0.001 + userData.angle) * 0.5;
+                        particle.scale.set(scale, scale, scale);
                     });
 
                     renderer.render(scene, camera);
@@ -282,15 +363,12 @@ app.get("/", (req, res) => {
 
                 // 창 크기 조절 대응
                 window.addEventListener('resize', () => {
+                    if (!isInitialized) return;
+                    
                     camera.aspect = window.innerWidth / window.innerHeight;
                     camera.updateProjectionMatrix();
                     renderer.setSize(window.innerWidth, window.innerHeight);
                 });
-
-                // 로딩 화면 제거
-                setTimeout(() => {
-                    document.querySelector('.loading').style.display = 'none';
-                }, 2000);
 
                 // 통계 업데이트
                 async function updateStats() {
@@ -308,16 +386,34 @@ app.get("/", (req, res) => {
                     }
                 }
 
+                // 초기화 및 애니메이션 시작
+                window.addEventListener('load', () => {
+                    try {
+                        init();
+                        animate();
+                        
+                        // 로딩 화면 숨기기
+                        setTimeout(() => {
+                            const loading = document.querySelector('.loading');
+                            loading.classList.add('hidden');
+                            setTimeout(() => {
+                                loading.style.display = 'none';
+                            }, 500);
+                        }, 1000);
+                    } catch (error) {
+                        console.error('Error initializing 3D scene:', error);
+                        document.querySelector('.loading-text').textContent = 
+                            '3D 환경 초기화 실패. 페이지를 새로고침해주세요.';
+                    }
+                });
+
                 // 5초마다 통계 업데이트
                 setInterval(updateStats, 5000);
                 updateStats();
-
-                animate();
-            }
-        </script>
-    </body>
-    </html>
-  `);
+            </script>
+        </body>
+        </html>
+    `);
 });
 
 // Gmail 인증 콜백
@@ -833,7 +929,7 @@ app.post("/process-auto-reply", express.json(), async (req, res) => {
 app.use("/", threeDHomeRouter);  // 3D 홈페이지를 메인 라우트로 설정
 app.use("/auto-reply", autoReplyRouter);
 app.use("/keyword-extractor", keywordExtractorRouter);
-app.use("/ai-response-logger", aiResponseLogger);
+app.use("/ai-response-logger", aiResponseLoggerRouter);
 app.use("/intent-detector", intentDetectorRouter);
 app.use("/mail-priority", mailPriorityRouter);
 
@@ -872,6 +968,118 @@ app.get('/stats', async (req, res) => {
     console.error('Error:', error);
     res.status(500).json({ error: '통계를 불러오는 중 오류가 발생했습니다.' });
   }
+});
+
+// 메일 목록 가져오기
+app.get("/mails", async (req, res) => {
+    try {
+        const { tokens } = req.app.locals;
+        if (!tokens) {
+            return res.status(401).json({ error: "인증되지 않음" });
+        }
+
+        const oauth2Client = new OAuth2Client(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+        );
+
+        oauth2Client.setCredentials(tokens);
+
+        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+        try {
+            const response = await gmail.users.messages.list({
+                userId: "me",
+                maxResults: 10,
+            });
+
+            const messages = response.data.messages || [];
+            const mails = await Promise.all(
+                messages.map(async (message) => {
+                    const mail = await gmail.users.messages.get({
+                        userId: "me",
+                        id: message.id,
+                    });
+
+                    const headers = mail.data.payload.headers;
+                    const subject = headers.find((h) => h.name === "Subject")?.value || "제목 없음";
+                    const from = headers.find((h) => h.name === "From")?.value || "발신자 없음";
+                    const date = headers.find((h) => h.name === "Date")?.value || "";
+
+                    let snippet = mail.data.snippet || "";
+                    if (snippet.length > 100) {
+                        snippet = snippet.substring(0, 100) + "...";
+                    }
+
+                    return {
+                        id: message.id,
+                        subject,
+                        from,
+                        date,
+                        snippet,
+                    };
+                })
+            );
+
+            res.json(mails);
+        } catch (gmailError) {
+            console.error("Gmail API 오류:", gmailError);
+            
+            // Gmail API 실패 시 DeepSeek API로 대체
+            try {
+                const deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "당신은 이메일 분석 전문가입니다. 주어진 이메일을 분석하여 제목, 발신자, 날짜, 내용 요약을 제공해주세요."
+                            },
+                            {
+                                role: "user",
+                                content: "최근 10개의 이메일을 분석해주세요."
+                            }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+
+                const deepseekData = await deepseekResponse.json();
+                
+                // DeepSeek 응답을 메일 형식으로 변환
+                const mails = deepseekData.choices[0].message.content
+                    .split("\n\n")
+                    .filter(block => block.trim())
+                    .map(block => {
+                        const lines = block.split("\n");
+                        return {
+                            id: Math.random().toString(36).substring(7),
+                            subject: lines[0].replace("제목: ", ""),
+                            from: lines[1].replace("발신자: ", ""),
+                            date: lines[2].replace("날짜: ", ""),
+                            snippet: lines[3].replace("내용: ", "")
+                        };
+                    });
+
+                res.json(mails);
+            } catch (deepseekError) {
+                console.error("DeepSeek API 오류:", deepseekError);
+                res.status(500).json({ 
+                    error: "메일을 불러오는데 실패했습니다.",
+                    details: "Gmail API와 DeepSeek API 모두 실패했습니다."
+                });
+            }
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "서버 오류" });
+    }
 });
 
 app.listen(port, () => {
