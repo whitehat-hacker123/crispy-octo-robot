@@ -351,4 +351,60 @@ async function generateAndLogResponse(subject, from, content) {
     }
 }
 
+// 자동 응답 생성
+async function generateAutoReply(emailContent) {
+    try {
+        // OpenAI API로 시도
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "system",
+                    content: "당신은 전문적인 이메일 응답 작성자입니다. 주어진 이메일에 대해 공손하고 전문적인 응답을 작성해주세요."
+                },
+                {
+                    role: "user",
+                    content: emailContent
+                }
+            ],
+            temperature: 0.7
+        });
+
+        return completion.choices[0].message.content;
+    } catch (openaiError) {
+        console.error("OpenAI API 오류:", openaiError);
+        
+        // OpenAI 실패 시 DeepSeek API로 대체
+        try {
+            const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "당신은 전문적인 이메일 응답 작성자입니다. 주어진 이메일에 대해 공손하고 전문적인 응답을 작성해주세요."
+                        },
+                        {
+                            role: "user",
+                            content: emailContent
+                        }
+                    ],
+                    temperature: 0.7
+                })
+            });
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (deepseekError) {
+            console.error("DeepSeek API 오류:", deepseekError);
+            throw new Error("자동 응답 생성에 실패했습니다.");
+        }
+    }
+}
+
 export default router; 
