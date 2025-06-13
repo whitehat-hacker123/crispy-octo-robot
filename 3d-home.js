@@ -116,7 +116,7 @@ router.get('/', (req, res) => {
                 });
 
                 // 메일 큐브 생성 함수
-                function createMailCube(x, y, z) {
+                function createMailCube(x, y) {
                     const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                     cube.position.set(x, y, z);
                     cube.userData = {
