@@ -69,6 +69,4 @@ npm start
 
 MIT License
 
-##tlqkf
--망함
--개망함
+## ㅅㅂ
