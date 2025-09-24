@@ -69,7 +69,3 @@ npm start
 
 MIT License
 
-## ㅅㅂ
-
-- 더이상 안합니다
-- Lua 스크립트 공부해야해서 
