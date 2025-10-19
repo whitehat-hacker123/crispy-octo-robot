@@ -1,4 +1,4 @@
-Copyright (c) 2025 whitehat-hacker123  
+/Copyright (c) 2025 whitehat-hacker123  
 All Rights Reserved. No part of this software may be reproduced, modified, distributed, or exploited in any form without explicit, written permission from the author.
 
 ───────────────────────────────────────────────────────────────  
