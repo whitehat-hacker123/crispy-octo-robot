@@ -170,7 +170,9 @@ This is protected intellectual property backed by law, code, and consequence.
 
 > If you engage with this code or API without permission,  
 > **you are committing theft.**
-
+> 
+for my portfolio
+> 
 There is no excuse. There will be no warnings beyond this one.  
 **You will be found. You will be held accountable.**
 
