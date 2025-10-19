@@ -180,7 +180,7 @@ There is no excuse. There will be no warnings beyond this one.
 "Code is law. This one bites."
 
 ────────────────────────────────────────────  
-End of License v2.0 | Last updated: May 2025 28
+yippee License v2.1 | Last updated: Oct 2025 18
 ────────────────────────────────────────────
 
 
