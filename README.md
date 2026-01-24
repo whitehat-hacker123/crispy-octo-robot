@@ -89,7 +89,7 @@ This repository — including but not limited to all associated source code, com
 Any form of unauthorized reproduction, duplication, reverse engineering, distribution, or use of this Software — particularly its internal API components — constitutes a **severe legal violation** and will result in aggressive civil and/or criminal prosecution.
 
 ──────────────────────────────────────────────  
-🔐 OWNERSHIP OF API AND CORE TECHNOLOGY  
+OWNERSHIP OF API AND CORE TECHNOLOGY  
 ──────────────────────────────────────────────
 
 All APIs embedded within this system are **intellectual property** of whitehat-hacker123 and are classified as **confidential and non-distributable**.
@@ -105,7 +105,7 @@ These components are **not covered** by any permissive license (e.g., MIT, Apach
 They are governed under a **strict zero-tolerance policy for unauthorized use.**
 
 ───────────────────────────────────────  
-⛔ ABSOLUTELY PROHIBITED ACTIONS  
+ABSOLUTELY PROHIBITED ACTIONS  
 ───────────────────────────────────────
 
 You are strictly and explicitly forbidden from engaging in the following actions:
@@ -152,7 +152,7 @@ Violators may face:
 
 To obtain licensed usage or legal collaboration terms, contact the repository owner:
 
-📧 Email: *******************
+📧 Email: no, don't trynna nago
 🔗 GitHub: https://github.com/whitehat-hacker123  
 
 Only **explicit, signed written consent** from the owner shall constitute authorization.  
