@@ -1,4 +1,4 @@
-# Crispy Octo Robot 🐙
+# Crispy Octo Robot 
 
 AI 기반 이메일 관리 및 대화 시스템
 
